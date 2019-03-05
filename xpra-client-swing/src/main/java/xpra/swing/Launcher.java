@@ -26,7 +26,9 @@ public class Launcher {
 		//XpraConnector connector = createSSH(client);
 
 		connector.connect();
-		while (connector.isRunning());
+		while (connector.isRunning()) {
+			Thread.sleep(1000);
+		};
 	}
 
 	private static SshXpraConnector createSSH(XpraClient client) {
