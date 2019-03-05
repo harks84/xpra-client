@@ -49,6 +49,7 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 		caps.put("client_type", "Java");
 		caps.put("screen_sizes", new int[][] { screenDims });
 		caps.put("encodings", PictureEncoding.toString(encodings));
+		caps.put("encoding.transparency",true);
 		caps.put("zlib", true);
 		caps.put("clipboard", false);
 		caps.put("notifications", true);

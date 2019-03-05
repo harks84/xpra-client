@@ -51,10 +51,11 @@ public class SwingFrame extends SwingWindow<JFrame> {
 		if(title != null) {
 			window.setTitle(title);
 		}
-		if(!metadata.getAsBoolean("decorations") && !window.isDisplayable()) {
-			window.setUndecorated(true);
-			window.setBackground(new Color(0, 0, 0, 0));
-		}
+// TODO correct
+//		if(!metadata.getAsBoolean("decorations") && !window.isDisplayable()) {
+//			window.setUndecorated(true);
+//			window.setBackground(new Color(0, 0, 0, 0));
+//		}
 	}
 
 	@Override
