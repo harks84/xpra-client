@@ -22,7 +22,7 @@ public class Launcher {
 
 	public static void main(String[] args) throws Exception {
 		XpraClient client = new SwingXpraClient();
-		XpraConnector connector = new TcpXpraConnector(client, "localhost", 10000);
+		XpraConnector connector = new TcpXpraConnector(client, "192.168.1.30", 10000);
 		//XpraConnector connector = createSSH(client);
 
 		connector.connect();
