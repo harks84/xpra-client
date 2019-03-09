@@ -29,6 +29,7 @@ import java.util.Map;
 import xpra.protocol.XpraReceiver;
 import xpra.protocol.XpraSender;
 import xpra.protocol.PictureEncoding;
+import xpra.protocol.packets.ChallengePacket;
 import xpra.protocol.packets.ConfigureWindowOverrideRedirect;
 import xpra.protocol.packets.CursorPacket;
 import xpra.protocol.packets.DesktopSize;
@@ -46,6 +47,7 @@ import xpra.protocol.packets.SetDeflate;
 import xpra.protocol.packets.StartupComplete;
 import xpra.protocol.packets.WindowIcon;
 import xpra.protocol.packets.WindowMetadata;
+import xpra.util.ChallengeUtil;
 
 public abstract class XpraClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(XpraClient.class);
@@ -65,6 +67,9 @@ public abstract class XpraClient {
 	private int dpi = 96;
 	private int xdpi;
 	private int ydpi;
+	
+	private String user;
+	private String password;
 	
 	/**
 	 * It is set to true, when a disconnect packet is sent from a Server.
@@ -87,6 +92,24 @@ public abstract class XpraClient {
 		//  setup packet handlers
 		receiver.registerHandler(HelloResponse.class, new HelloHandler());
     receiver.registerHandler(Ping.class, new PingHandler());
+    receiver.registerHandler(ChallengePacket.class, new XpraReceiver.PacketHandler<ChallengePacket>() {
+		@Override
+		public void process(ChallengePacket challenge) throws IOException {
+			LOGGER.debug("Sending hello with challenge response");
+			final HelloRequest hello = new HelloRequest(desktopWidth, desktopHeight, keyboard, encoding, pictureEncodings);
+			hello.setDpi(dpi, xdpi, ydpi);
+			int saltLength = challenge.serverSalt.length();
+			if(!challenge.saltDigest.equals("xor")) {
+				saltLength = 32;
+			}
+			
+			String clientSalt = ChallengeUtil.getClientSalt(saltLength);
+			String challengeSalt = ChallengeUtil.generateDigest(challenge.saltDigest, clientSalt, challenge.serverSalt);
+			String challengeResponse = ChallengeUtil.generateDigest(challenge.digest, password, challengeSalt);
+			hello.setChallengeResponse(challengeResponse, clientSalt);
+			sender.send(hello);
+		}
+	});
     receiver.registerHandler(Disconnect.class, new XpraReceiver.PacketHandler<Disconnect>() {
 			@Override
 			public void process(Disconnect response) throws IOException {
@@ -223,6 +246,7 @@ public abstract class XpraClient {
 		this.sender = sender;
 		final HelloRequest hello = new HelloRequest(desktopWidth, desktopHeight, keyboard, encoding, pictureEncodings);
 		hello.setDpi(dpi, xdpi, ydpi);
+		hello.setUser(user);
 		sender.send(hello);
 	}
 	
@@ -293,6 +317,14 @@ public abstract class XpraClient {
 			// sl = self.server_latency[-1]
 			sender.send(new PingEcho(response, l1, l2, l3, serverLatency));
 		}
+	}
+
+	public void setUser(String user) {
+		this.user = user;
+	}
+	
+	public void setPassword(String password) {
+		this.password = password;
 	}
 	
 }

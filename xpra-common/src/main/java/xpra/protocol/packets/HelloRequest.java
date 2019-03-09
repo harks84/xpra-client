@@ -37,11 +37,26 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 
 	public HelloRequest(int screenWidth, int screenHeight, XpraKeyboard keyboard, PictureEncoding defaultEncoding, PictureEncoding[] encodings) {
 		super("hello");
+		
+		caps.put("challenge", true);
+		
+		caps.put("share", false);
+		caps.put("steal", true);
+		
 		caps.put("version", ProtocolConstants.VERSION);
+		
 		// if (enc_pass != null) {
 		// caps.put("challenge_response", enc_pass);
 		// }
+		caps.put("metadata.supported", new String[] {"fullscreen", "maximized", "above", "below","group-leader",
+					"title", "size-hints", "class-instance", "transient-for", "window-type", "has-alpha",
+					"decorations", "override-redirect", "tray", "modal", "opacity", "desktop"});
+		
+		String[] digests = new String[] {"hmac", "hmac+md5", "xor"};
+		caps.put("digest", digests);
+		caps.put("salt-digest", digests);
 		final int[] screenDims = new int[] { screenWidth, screenHeight };
+		caps.put("auto_refresh_delay", 500);
 		caps.put("desktop_size", screenDims);
 		caps.put("dpi", 96);
 //		caps.put("dpi.x", 0);
@@ -49,7 +64,17 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 		caps.put("client_type", "Java");
 		caps.put("screen_sizes", new int[][] { screenDims });
 		caps.put("encodings", PictureEncoding.toString(encodings));
+		caps.put("encodings.window-icon", new String[] { "png" });
+
+       								
+		//TODO 
+		//caps.put("encodings.cursor", new String[] { "png" });
 		caps.put("encoding.transparency",true);
+		caps.put("encoding.client_options",true);
+		caps.put("encoding.csc_atoms",true);
+		caps.put("encoding.scrolling",true);
+
+		
 		caps.put("zlib", true);
 		caps.put("clipboard", false);
 		caps.put("notifications", true);
@@ -109,6 +134,17 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 	@Override
 	protected void serialize(Collection<Object> elems) {
 		elems.add(caps);
+	}
+
+	public void setChallengeResponse(String challengeResponse, String challengeSalt) {
+		// TODO Auto-generated method stub
+		caps.put("challenge_response", challengeResponse);
+		caps.put("challenge_client_salt", challengeSalt);
+		
+	}
+
+	public void setUser(String user) {
+		caps.put("username", user);
 	}
 
 }

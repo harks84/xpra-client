@@ -27,20 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import xpra.protocol.packets.ConfigureWindowOverrideRedirect;
-import xpra.protocol.packets.CursorPacket;
-import xpra.protocol.packets.Disconnect;
-import xpra.protocol.packets.DrawPacket;
-import xpra.protocol.packets.HelloResponse;
-import xpra.protocol.packets.LostWindow;
-import xpra.protocol.packets.NewWindow;
-import xpra.protocol.packets.NewWindowOverrideRedirect;
-import xpra.protocol.packets.Ping;
-import xpra.protocol.packets.RaiseWindow;
-import xpra.protocol.packets.SetDeflate;
-import xpra.protocol.packets.StartupComplete;
-import xpra.protocol.packets.WindowIcon;
-import xpra.protocol.packets.WindowMetadata;
+import xpra.protocol.packets.*;
 
 /**
  *
@@ -54,6 +41,7 @@ public class XpraReceiver {
 
   static {
     PACKETS_MAP.put("hello", HelloResponse::new);
+    PACKETS_MAP.put("challenge", ChallengePacket::new);
     PACKETS_MAP.put("cursor", CursorPacket::new);
     PACKETS_MAP.put("ping", Ping::new);
     PACKETS_MAP.put("startup-complete", StartupComplete::new);
