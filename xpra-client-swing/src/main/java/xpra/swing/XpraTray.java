@@ -40,7 +40,9 @@ public class XpraTray {
 				// TODO Auto-generated method stub
 				Disconnect disconnect = new Disconnect();
 				disconnect.reason = "Requested by user";
-				client.getSender().send(disconnect);
+				if(client != null && client.getSender() !=null) {
+					client.getSender().send(disconnect);
+				}
 				// wait a little to capture server shutdown
 				try {
 					Thread.sleep(1000);
