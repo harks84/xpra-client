@@ -33,12 +33,13 @@ public class KeyAction extends WindowPacket {
 
   int group = 0; // added in xpra 2.1
 	
-	public KeyAction(int windowId, int keycode, String keyname, boolean pressed) {
+	public KeyAction(int windowId, int keycode, String keyname, boolean pressed, List<String>modifiers) {
 		super("key-action", windowId);
 		this.keyval = 0;
 		this.keycode = keycode;
 		this.keyname = keyname;
 		this.pressed = pressed;
+		this.modifiers = modifiers;
 	}
 	
 	@Override
