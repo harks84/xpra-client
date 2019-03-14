@@ -58,15 +58,19 @@ public class ChallengeUtil {
 		String result = "";
 
 		for(int i = 0; i < str1.length(); i++) {
-			result += Character.toChars((int)str1.charAt(i) ^ (int)str2.charAt(i))[0];
+			int a = Character.codePointAt(str1, i) ^ Character.codePointAt(str2, i);
+			result += Character.toChars(a)[0];
 		}
 		return result;
 	}
 	
 	public static String getClientSalt(int length) {
-		UUID uuid = UUID.randomUUID();
-		String salt = uuid.toString() + uuid.toString();
-		//TODO actually increase uuid to correct length
+
+		String salt = UUID.randomUUID().toString();
+		while(salt.length()<length) {
+			salt += UUID.randomUUID().toString();
+		}
+
 		return salt.substring(0,length);
 	}
 	

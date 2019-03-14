@@ -77,7 +77,7 @@ public class HeaderChunkTest {
     headerChunk.setPacketSize(3);
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    headerChunk.writeHeader(out);
+    out.write(headerChunk.getHeader());
     assertArrayEquals(HEADER, out.toByteArray());
   }
 

@@ -18,6 +18,7 @@
 
 package xpra.protocol;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -30,11 +31,12 @@ import org.slf4j.LoggerFactory;
 import xpra.network.HeaderChunk;
 
 import com.github.jksiezni.rencode.RencodeOutputStream;
+import com.neovisionaries.ws.client.WebSocket;
 
 public class XpraSender implements Closeable {
 	private static final Logger logger = LoggerFactory.getLogger(XpraSender.class);
 
-	private final OutputStream outputStream;
+	private OutputStream outputStream;
 	private final HeaderChunk headerChunk = new HeaderChunk();
 
 	private final UnsafeByteArrayOutputStream byteStream = new UnsafeByteArrayOutputStream(4096);
@@ -50,6 +52,7 @@ public class XpraSender implements Closeable {
 	public XpraSender(OutputStream os) {
 		this.outputStream = os;
 	}
+
 
 	public synchronized void send(IOPacket packet) {
 		if(closed) {
@@ -85,9 +88,15 @@ public class XpraSender implements Closeable {
 			headerChunk.setPacketSize(packetSize);
 
 			logger.debug("send(): payload size is " + packetSize + " bytes");
-      headerChunk.writeHeader(outputStream);
-			outputStream.write(bytes, 0, packetSize);
+			ByteArrayOutputStream output = new ByteArrayOutputStream();
+			output.write(headerChunk.getHeader());
+			output.write(bytes, 0, packetSize);
+			byte[] out = output.toByteArray();
+			
+			
+			outputStream.write(out);
 			outputStream.flush();
+			
 			byteStream.reset();
 		} catch (IOException e) {
 			logger.error("Failed to send packet: " + packet.type, e);

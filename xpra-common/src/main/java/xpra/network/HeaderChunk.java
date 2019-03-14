@@ -68,8 +68,8 @@ public class HeaderChunk {
     }
 	}
 
-  public void writeHeader(OutputStream outputStream) throws IOException {
-    outputStream.write(header);
+  public byte[] getHeader() {
+	  return header;
   }
 
 	byte getFlags() {

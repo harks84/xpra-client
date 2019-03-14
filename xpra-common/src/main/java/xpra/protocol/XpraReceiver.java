@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import xpra.protocol.handlers.PacketHandler;
 import xpra.protocol.packets.*;
 
 /**
@@ -43,11 +44,13 @@ public class XpraReceiver {
     PACKETS_MAP.put("hello", HelloResponse::new);
     PACKETS_MAP.put("challenge", ChallengePacket::new);
     PACKETS_MAP.put("cursor", CursorPacket::new);
+    PACKETS_MAP.put("send-file", ReceiveFile::new);
     PACKETS_MAP.put("ping", Ping::new);
     PACKETS_MAP.put("startup-complete", StartupComplete::new);
     PACKETS_MAP.put("disconnect", Disconnect::new);
     PACKETS_MAP.put("new-window", NewWindow::new);
     PACKETS_MAP.put("new-override-redirect", NewWindowOverrideRedirect::new);
+    PACKETS_MAP.put("notify_show", Notify::new);
     PACKETS_MAP.put("set_deflate", SetDeflate::new);
     PACKETS_MAP.put("draw", DrawPacket::new);
     PACKETS_MAP.put("window-metadata", WindowMetadata::new);
@@ -90,8 +93,5 @@ public class XpraReceiver {
     T build();
   }
 
-  public interface PacketHandler<T extends Packet> {
 
-    void process(T packet) throws IOException;
-  }
 }

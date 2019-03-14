@@ -18,6 +18,8 @@
 
 package xpra.client;
 
+import java.util.List;
+
 import xpra.protocol.XpraSender;
 import xpra.protocol.packets.CloseWindow;
 import xpra.protocol.packets.ConfigureWindow;
@@ -120,13 +122,16 @@ public abstract class XpraWindow {
 	}
 	
 	public void mouseAction(int button, boolean pressed, int x, int y) {
-		if(x < 0 || y < 0) {
-			throw new IllegalArgumentException("Minus coordinates are not allowed: " + x + ", " + y);
+		if(x < 0) {
+			x=0;
+		}
+		if(y < 0) {
+			y=0;
 		}
 		sender.send(new MouseButtonAction(id, button, pressed, x, y));
 	}
 	
-	public void keyboardAction(int keycode, String keyname, boolean pressed) {
-		sender.send(new KeyAction(id, keycode, keyname, pressed));
+	public void keyboardAction(int keycode, String keyname, boolean pressed, List<String> modifiers) {
+		sender.send(new KeyAction(id, keycode, keyname, pressed, modifiers));
 	}
 }

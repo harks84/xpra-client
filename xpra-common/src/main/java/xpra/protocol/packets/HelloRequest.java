@@ -39,7 +39,6 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 		super("hello");
 		
 		caps.put("challenge", true);
-		
 		caps.put("share", false);
 		caps.put("steal", true);
 		
@@ -52,7 +51,7 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 					"title", "size-hints", "class-instance", "transient-for", "window-type", "has-alpha",
 					"decorations", "override-redirect", "tray", "modal", "opacity", "desktop"});
 		
-		String[] digests = new String[] {"hmac", "hmac+md5", "xor"};
+		String[] digests = new String[] {"hmac", "hmac+md5", "hmac+sha256", "xor"};
 		caps.put("digest", digests);
 		caps.put("salt-digest", digests);
 		final int[] screenDims = new int[] { screenWidth, screenHeight };
@@ -65,7 +64,11 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 		caps.put("screen_sizes", new int[][] { screenDims });
 		caps.put("encodings", PictureEncoding.toString(encodings));
 		caps.put("encodings.window-icon", new String[] { "png" });
-
+		caps.put("encoding.generic", true);
+		
+		caps.put("encoding.core", PictureEncoding.toString(encodings));
+		caps.put("encoding.eos", true);
+		caps.put("system_tray", true);
        								
 		//TODO 
 		//caps.put("encodings.cursor", new String[] { "png" });
@@ -73,7 +76,8 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 		caps.put("encoding.client_options",true);
 		caps.put("encoding.csc_atoms",true);
 		caps.put("encoding.scrolling",true);
-
+		caps.put("encoding.flush",true);
+		caps.put("generic-rgb-encodings",true);
 		
 		caps.put("zlib", true);
 		caps.put("clipboard", false);
@@ -81,9 +85,13 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 		caps.put("cursors", true);
 		caps.put("named_cursors", true);
 		caps.put("bell", true);
-		caps.put("bencode", true);
+		caps.put("bencode", false);
 		caps.put("rencode", true);
 		caps.put("chunked_compression", true);
+		
+		caps.put("file-transfer", true);
+		caps.put("file-size-limit", 10);
+		
 		if (defaultEncoding != null) {
 			caps.put("encoding", defaultEncoding.toString());
 			if (PictureEncoding.jpeg.equals(defaultEncoding)) {
@@ -105,8 +113,7 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 		if (keyboard != null) {
 			caps.put("keyboard", true);
 			caps.put("keyboard_sync", false);
-			caps.put("xkbmap_layout", keyboard.getLocale().getLanguage());
-			caps.put("xkbmap_variant", keyboard.getLocale().getVariant());
+			caps.put("xkbmap_layout", "gb");
 			caps.put("xkbmap_keycodes", buildKeycodes(keyboard.getKeycodes()));
 		} else {
 			caps.put("keyboard", false);

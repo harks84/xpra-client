@@ -29,8 +29,14 @@ public class SwingPopup extends XpraWindow {
 	@Override
 	protected void onStart(NewWindow wnd) {
 		Window window = null;
+		// TODO popup fix for insets on parent frame
 		int offsetX = 0;
 		int offsetY = 0;
+		if("Windows 10".equals(System.getProperty("os.name"))){
+			offsetX = 8;
+			offsetY = 31;
+		}
+
 		if(owner != null) {
 			window = owner.window;
 			offsetX = owner.offsetX;

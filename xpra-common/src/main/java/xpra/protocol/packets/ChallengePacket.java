@@ -46,7 +46,6 @@ public class ChallengePacket extends xpra.protocol.Packet {
 		digest = asString(iter.next());
 		saltDigest = asString(iter.next());
 		challengeType = asString(iter.next());
-		
 		if(saltDigest == null || saltDigest == "") {
 			saltDigest = "xor";
 		}

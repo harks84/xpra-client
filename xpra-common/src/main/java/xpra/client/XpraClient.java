@@ -21,6 +21,8 @@ package xpra.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +30,9 @@ import java.util.Map;
 
 import xpra.protocol.XpraReceiver;
 import xpra.protocol.XpraSender;
+import xpra.protocol.handlers.HelloHandler;
+import xpra.protocol.handlers.PacketHandler;
+import xpra.protocol.handlers.PingHandler;
 import xpra.protocol.PictureEncoding;
 import xpra.protocol.packets.ChallengePacket;
 import xpra.protocol.packets.ConfigureWindowOverrideRedirect;
@@ -40,9 +45,11 @@ import xpra.protocol.packets.HelloResponse;
 import xpra.protocol.packets.LostWindow;
 import xpra.protocol.packets.NewWindow;
 import xpra.protocol.packets.NewWindowOverrideRedirect;
+import xpra.protocol.packets.Notify;
 import xpra.protocol.packets.Ping;
 import xpra.protocol.packets.PingEcho;
 import xpra.protocol.packets.RaiseWindow;
+import xpra.protocol.packets.ReceiveFile;
 import xpra.protocol.packets.SetDeflate;
 import xpra.protocol.packets.StartupComplete;
 import xpra.protocol.packets.WindowIcon;
@@ -50,15 +57,16 @@ import xpra.protocol.packets.WindowMetadata;
 import xpra.util.ChallengeUtil;
 
 public abstract class XpraClient {
-	private static final Logger LOGGER = LoggerFactory.getLogger(XpraClient.class);
-	
+	public static final Logger LOGGER = LoggerFactory.getLogger(XpraClient.class);
+
 	private final Map<Integer, XpraWindow> windows = new HashMap<>();
-	
+
 	private final PictureEncoding[] pictureEncodings;
 	private final XpraKeyboard keyboard;
 
-  private XpraSender sender;
-  private XpraReceiver receiver;
+	private static XpraSender sender;
+	private static XpraReceiver receiver;
+	
 
 	/* Configuration options. */
 	private PictureEncoding encoding;
@@ -67,57 +75,56 @@ public abstract class XpraClient {
 	private int dpi = 96;
 	private int xdpi;
 	private int ydpi;
-	
+
 	private String user;
 	private String password;
-	
+
 	/**
 	 * It is set to true, when a disconnect packet is sent from a Server.
 	 */
 	private boolean disconnectedByServer;
-	
 
 	public XpraClient(int desktopWidth, int desktopHeight, PictureEncoding[] supportedPictureEncodings) {
 		this(desktopWidth, desktopHeight, supportedPictureEncodings, null);
 	}
-	
-	public XpraClient(int desktopWidth, int desktopHeight, PictureEncoding[] supportedPictureEncodings, XpraKeyboard keyboard) {
+
+	public XpraClient(int desktopWidth, int desktopHeight, PictureEncoding[] supportedPictureEncodings,
+			XpraKeyboard keyboard) {
 		this.desktopWidth = desktopWidth;
 		this.desktopHeight = desktopHeight;
 		this.pictureEncodings = supportedPictureEncodings;
 		this.encoding = pictureEncodings[0];
 		this.keyboard = keyboard;
-    this.receiver = new XpraReceiver();
-		
-		//  setup packet handlers
+		this.receiver = new XpraReceiver();
+
+		// setup packet handlers
 		receiver.registerHandler(HelloResponse.class, new HelloHandler());
-    receiver.registerHandler(Ping.class, new PingHandler());
-    receiver.registerHandler(ChallengePacket.class, new XpraReceiver.PacketHandler<ChallengePacket>() {
-		@Override
-		public void process(ChallengePacket challenge) throws IOException {
-			LOGGER.debug("Sending hello with challenge response");
-			final HelloRequest hello = new HelloRequest(desktopWidth, desktopHeight, keyboard, encoding, pictureEncodings);
-			hello.setDpi(dpi, xdpi, ydpi);
-			int saltLength = challenge.serverSalt.length();
-			if(!challenge.saltDigest.equals("xor")) {
-				saltLength = 32;
+		receiver.registerHandler(Ping.class, new PingHandler());
+		receiver.registerHandler(ChallengePacket.class, new PacketHandler<ChallengePacket>() {
+			@Override
+			public void process(ChallengePacket challenge) throws IOException {
+				LOGGER.debug("Sending hello with challenge response");
+				final HelloRequest hello = new HelloRequest(desktopWidth, desktopHeight, keyboard, encoding,
+						pictureEncodings);
+				hello.setDpi(dpi, xdpi, ydpi);
+
+				int saltLength = challenge.serverSalt.length();
+				String clientSalt = ChallengeUtil.getClientSalt(32);
+				String challengeSalt = ChallengeUtil.generateDigest(challenge.saltDigest, clientSalt,
+						challenge.serverSalt);
+				String challengeResponse = ChallengeUtil.generateDigest(challenge.digest, password, challengeSalt);
+				hello.setChallengeResponse(challengeResponse, clientSalt);
+				sender.send(hello);
 			}
-			
-			String clientSalt = ChallengeUtil.getClientSalt(saltLength);
-			String challengeSalt = ChallengeUtil.generateDigest(challenge.saltDigest, clientSalt, challenge.serverSalt);
-			String challengeResponse = ChallengeUtil.generateDigest(challenge.digest, password, challengeSalt);
-			hello.setChallengeResponse(challengeResponse, clientSalt);
-			sender.send(hello);
-		}
-	});
-    receiver.registerHandler(Disconnect.class, new XpraReceiver.PacketHandler<Disconnect>() {
+		});
+		receiver.registerHandler(Disconnect.class, new PacketHandler<Disconnect>() {
 			@Override
 			public void process(Disconnect response) throws IOException {
-				LOGGER.debug("Server disconnected with msg: %s", response.reason);
+				LOGGER.debug("Server disconnected with msg: " + response.reason);
 				disconnectedByServer = true;
 			}
 		});
-    receiver.registerHandler(NewWindow.class, new XpraReceiver.PacketHandler<NewWindow>() {
+		receiver.registerHandler(NewWindow.class, new PacketHandler<NewWindow>() {
 			@Override
 			public void process(NewWindow response) throws IOException {
 				LOGGER.info("Processing... " + response);
@@ -128,7 +135,7 @@ public abstract class XpraClient {
 				onWindowStarted(window);
 			}
 		});
-    receiver.registerHandler(NewWindowOverrideRedirect.class, new XpraReceiver.PacketHandler<NewWindowOverrideRedirect>() {
+		receiver.registerHandler(NewWindowOverrideRedirect.class, new PacketHandler<NewWindowOverrideRedirect>() {
 			@Override
 			public void process(NewWindowOverrideRedirect response) throws IOException {
 				LOGGER.info("Processing... " + response);
@@ -139,76 +146,106 @@ public abstract class XpraClient {
 				onWindowStarted(window);
 			}
 		});
-    receiver.registerHandler(SetDeflate.class, new XpraReceiver.PacketHandler<SetDeflate>() {
+		
+		receiver.registerHandler(Notify.class, new PacketHandler<Notify>() {
+			@Override
+			public void process(Notify response) throws IOException {
+				LOGGER.info("Processing... " + response);
+				XpraClient.this.notify(response.title, response.message);
+				
+			}
+
+		});
+		
+		receiver.registerHandler(ReceiveFile.class, new PacketHandler<ReceiveFile>() {
+			@Override
+			public void process(ReceiveFile response) throws IOException {
+				LOGGER.info("Processing... " + response);
+				//TODO cross-platform downloads folder
+				//TODO rename if file exists.
+				String home = System.getProperty("user.home");
+				File file = new File(home + File.separator + "Downloads" + File.separator + response.name); 
+				try (FileOutputStream stream = new FileOutputStream(file)) {
+				    stream.write(response.data);
+				    stream.close();
+				    XpraClient.this.notify("Xpra File Download", "File saved to:\n" + file.getAbsolutePath());
+				}
+				
+			}
+
+		});
+		
+		receiver.registerHandler(SetDeflate.class, new PacketHandler<SetDeflate>() {
 			@Override
 			public void process(SetDeflate response) throws IOException {
 				sender.setCompressionLevel(response.compressionLevel);
 			}
 		});
-    receiver.registerHandler(DrawPacket.class, new XpraReceiver.PacketHandler<DrawPacket>() {
+		receiver.registerHandler(DrawPacket.class, new PacketHandler<DrawPacket>() {
 			@Override
 			public void process(DrawPacket packet) throws IOException {
 				final XpraWindow xpraWindow = windows.get(packet.getWindowId());
-				if(xpraWindow != null) {
+				if (xpraWindow != null) {
 					xpraWindow.draw(packet);
 				} else {
 					LOGGER.error("Missing window when handling: " + packet);
-					//XpraWindow.sendDamageSequence(sender, packet, 0);
+					// XpraWindow.sendDamageSequence(sender, packet, 0);
 				}
 			}
 		});
-    receiver.registerHandler(WindowMetadata.class, new XpraReceiver.PacketHandler<WindowMetadata>() {
+		receiver.registerHandler(WindowMetadata.class, new PacketHandler<WindowMetadata>() {
 			@Override
 			public void process(WindowMetadata meta) throws IOException {
 				windows.get(meta.getWindowId()).onMetadataUpdate(meta);
 			}
 		});
-    receiver.registerHandler(LostWindow.class, new XpraReceiver.PacketHandler<LostWindow>() {
+		receiver.registerHandler(LostWindow.class, new PacketHandler<LostWindow>() {
 			@Override
 			public void process(LostWindow response) throws IOException {
 				final XpraWindow window = windows.remove(response.getWindowId());
-				if(window != null) {
+				if (window != null) {
 					window.onStop();
 					onDestroyWindow(window);
 				}
 			}
 		});
-    receiver.registerHandler(CursorPacket.class, this::onCursorUpdate);
-    receiver.registerHandler(WindowIcon.class, new XpraReceiver.PacketHandler<WindowIcon>() {
+		receiver.registerHandler(CursorPacket.class, this::onCursorUpdate);
+		receiver.registerHandler(WindowIcon.class, new PacketHandler<WindowIcon>() {
 			@Override
 			public void process(WindowIcon response) throws IOException {
 				XpraWindow window = getWindow(response.getWindowId());
-				if(window != null) {
+				if (window != null) {
 					window.onIconUpdate(response);
 				}
 			}
 		});
 		receiver.registerHandler(ConfigureWindowOverrideRedirect.class,
-        new XpraReceiver.PacketHandler<ConfigureWindowOverrideRedirect>() {
+				new PacketHandler<ConfigureWindowOverrideRedirect>() {
+					@Override
+					public void process(ConfigureWindowOverrideRedirect response) throws IOException {
+						XpraWindow window = windows.get(response.getWindowId());
+						if (window != null) {
+							window.onMoveResize(response);
+						}
+					}
+				});
+		receiver.registerHandler(RaiseWindow.class, new PacketHandler<RaiseWindow>() {
 			@Override
-			public void process(ConfigureWindowOverrideRedirect response) throws IOException {
-				XpraWindow window = windows.get(response.getWindowId());
-				if(window != null) {
-					window.onMoveResize(response);
-				}
-			}
-		});
-    receiver.registerHandler(RaiseWindow.class, new XpraReceiver.PacketHandler<RaiseWindow>() {
-			@Override
-      public void process(RaiseWindow response) throws IOException {
+			public void process(RaiseWindow response) throws IOException {
 				LOGGER.info("raise-window: " + response.getWindowId());
 			}
 		});
-    receiver.registerHandler(StartupComplete.class, new XpraReceiver.PacketHandler<StartupComplete>() {
-      @Override
-      public void process(StartupComplete response) throws IOException {
-        LOGGER.info(response.toString());
-      }
-    });
+		receiver.registerHandler(StartupComplete.class, new PacketHandler<StartupComplete>() {
+			@Override
+			public void process(StartupComplete response) throws IOException {
+				LOGGER.info(response.toString());
+			}
+		});
 	}
-	
+
 	/**
-	 * The DPI should be set before connecting to Server. 
+	 * The DPI should be set before connecting to Server.
+	 * 
 	 * @param dpi
 	 * @param xdpi
 	 * @param ydpi
@@ -218,7 +255,7 @@ public abstract class XpraClient {
 		this.xdpi = xdpi;
 		this.ydpi = ydpi;
 	}
-	
+
 	/**
 	 * Called when a new window is created.
 	 * 
@@ -234,7 +271,7 @@ public abstract class XpraClient {
 	 */
 	protected void onDestroyWindow(XpraWindow window) {
 	}
-	
+
 	protected void onWindowStarted(XpraWindow window) {
 	}
 
@@ -249,36 +286,36 @@ public abstract class XpraClient {
 		hello.setUser(user);
 		sender.send(hello);
 	}
-	
+
 	public void onDisconnect() {
-		for(XpraWindow w : windows.values()) {
+		for (XpraWindow w : windows.values()) {
 			w.onStop();
 		}
 		windows.clear();
 		disconnectedByServer = false;
 		sender = null;
 	}
-		
+
 	public void onConnectionError(IOException e) {
 		LOGGER.error("connection error", e);
 	}
-	
-	public XpraSender getSender() {
+
+	public static XpraSender getSender() {
 		return sender;
 	}
-	
+
 	public XpraWindow getWindow(int windowId) {
 		return windows.get(windowId);
 	}
-	
+
 	public void setDesktopSize(int width, int height) {
 		this.desktopWidth = width;
 		this.desktopHeight = height;
-		if(sender != null) {
+		if (sender != null) {
 			sender.send(new DesktopSize(width, height));
 		}
 	}
-	
+
 	public boolean isDisconnectedByServer() {
 		return disconnectedByServer;
 	}
@@ -287,44 +324,20 @@ public abstract class XpraClient {
 		this.encoding = pictureEncoding;
 	}
 
-  public void onPacketReceived(List<Object> list) throws IOException {
-    receiver.onReceive(list);
-  }
-
-
-  private class HelloHandler implements XpraReceiver.PacketHandler<HelloResponse> {
-
-		private final SetDeflate setDeflate = new SetDeflate(3);
-		
-		@Override
-		public void process(HelloResponse response) throws IOException {
-			LOGGER.debug(response.toString());
-			sender.useRencode(response.isRencode());
-			sender.send(setDeflate);
-		}
+	public void onPacketReceived(List<Object> list) throws IOException {
+		receiver.onReceive(list);
 	}
-	
-	private class PingHandler implements XpraReceiver.PacketHandler<Ping> {
-		
-		@Override
-		public void process(Ping response) throws IOException {
-			// TODO: load average:
-			long l1 = 1;
-			long l2 = 1;
-			long l3 = 1;
-			int serverLatency = -1;
-			// if len(self.server_latency)>0:
-			// sl = self.server_latency[-1]
-			sender.send(new PingEcho(response, l1, l2, l3, serverLatency));
-		}
-	}
+
 
 	public void setUser(String user) {
 		this.user = user;
 	}
-	
+
 	public void setPassword(String password) {
 		this.password = password;
 	}
 	
+	public abstract void notify(String title, String message);
+	
+
 }

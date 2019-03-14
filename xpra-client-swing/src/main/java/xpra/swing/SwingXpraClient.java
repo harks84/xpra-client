@@ -32,9 +32,11 @@ import xpra.swing.keyboard.SimpleXpraKeyboard;
  *
  */
 public class SwingXpraClient extends XpraClient {
+	
+	private final XpraTray tray;
 
-	private static final PictureEncoding[] PICTURE_ENCODINGS = { PictureEncoding.png, PictureEncoding.pngL,
-			PictureEncoding.pngP, PictureEncoding.jpeg };
+	private static final PictureEncoding[] PICTURE_ENCODINGS = { PictureEncoding.pngL,
+			PictureEncoding.pngP, PictureEncoding.pngL, PictureEncoding.jpeg };
 
 	private static int getDesktopWidth() {
 		return GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds().width;
@@ -46,6 +48,7 @@ public class SwingXpraClient extends XpraClient {
 
 	public SwingXpraClient() {
 		super(getDesktopWidth(), getDesktopHeight(), PICTURE_ENCODINGS, new SimpleXpraKeyboard());
+		tray = new XpraTray(this);
 //		System.out.println(GraphicsEnvironment.getLocalGraphicsEnvironment()
 //				.getDefaultScreenDevice()
 //				.isWindowTranslucencySupported(WindowTranslucency.TRANSLUCENT));
@@ -56,6 +59,7 @@ public class SwingXpraClient extends XpraClient {
 //				.getDefaultScreenDevice()
 //				.isWindowTranslucencySupported(WindowTranslucency.PERPIXEL_TRANSPARENT));
 	}
+	
 
 	@Override
 	protected XpraWindow onCreateWindow(NewWindow wnd) {
@@ -125,5 +129,15 @@ public class SwingXpraClient extends XpraClient {
 		SwingFrame window = (SwingFrame) getWindow(1);
 		window.window.setCursor(c);
 
+	}
+	
+	public XpraTray getTray() {
+		return tray;
+	}
+
+	@Override
+	public void notify(String title, String message) {
+		getTray().notify(title, message);
+		
 	}
 }
