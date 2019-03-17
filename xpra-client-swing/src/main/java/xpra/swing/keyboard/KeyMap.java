@@ -33,7 +33,7 @@ public class KeyMap {
 		
 		//??? function keys
 		for(int i = KeyEvent.VK_F1; i <= KeyEvent.VK_F12; ++i) {
-			keycodesMap.put(i, "F" + Integer.toString(i - KeyEvent.VK_F1));
+			keycodesMap.put(i, "F" + Integer.toString(i + 1 - KeyEvent.VK_F1));
 		}
 		
 		for(int i = KeyEvent.VK_F13; i <= KeyEvent.VK_F24; ++i) {
