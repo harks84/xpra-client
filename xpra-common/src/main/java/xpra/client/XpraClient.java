@@ -21,6 +21,13 @@ package xpra.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.FlavorEvent;
+import java.awt.datatransfer.FlavorListener;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -35,6 +42,8 @@ import xpra.protocol.handlers.PacketHandler;
 import xpra.protocol.handlers.PingHandler;
 import xpra.protocol.PictureEncoding;
 import xpra.protocol.packets.ChallengePacket;
+import xpra.protocol.packets.ClipboardToken;
+import xpra.protocol.packets.ClipboardToken;
 import xpra.protocol.packets.ConfigureWindowOverrideRedirect;
 import xpra.protocol.packets.CursorPacket;
 import xpra.protocol.packets.DesktopSize;
@@ -78,6 +87,8 @@ public abstract class XpraClient {
 
 	private String user;
 	private String password;
+	
+	Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 
 	/**
 	 * It is set to true, when a disconnect packet is sent from a Server.
@@ -96,6 +107,24 @@ public abstract class XpraClient {
 		this.encoding = pictureEncodings[0];
 		this.keyboard = keyboard;
 		this.receiver = new XpraReceiver();
+		
+		clipboard.addFlavorListener(new FlavorListener() {
+			@Override
+			public void flavorsChanged(FlavorEvent e) {
+				String clipboardString;
+				try {
+					clipboardString = (String) clipboard.getData(DataFlavor.stringFlavor);
+					sender.send(new ClipboardToken(clipboardString));
+				} catch (UnsupportedFlavorException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+			}
+		});
 
 		// setup packet handlers
 		receiver.registerHandler(HelloResponse.class, new HelloHandler());
@@ -117,6 +146,18 @@ public abstract class XpraClient {
 				sender.send(hello);
 			}
 		});
+		
+		receiver.registerHandler(ClipboardToken.class, new PacketHandler<ClipboardToken>() {
+			@Override
+			public void process(ClipboardToken response) throws IOException {
+				LOGGER.info("Processing... " + response);
+				if(response.data != null) {
+					clipboard.setContents(new StringSelection(new String(response.data)), null);
+				}
+				
+			}
+		});
+		
 		receiver.registerHandler(Disconnect.class, new PacketHandler<Disconnect>() {
 			@Override
 			public void process(Disconnect response) throws IOException {

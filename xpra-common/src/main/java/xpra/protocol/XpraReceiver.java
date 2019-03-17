@@ -43,6 +43,7 @@ public class XpraReceiver {
   static {
     PACKETS_MAP.put("hello", HelloResponse::new);
     PACKETS_MAP.put("challenge", ChallengePacket::new);
+    PACKETS_MAP.put("clipboard-token", ClipboardToken::new);
     PACKETS_MAP.put("cursor", CursorPacket::new);
     PACKETS_MAP.put("send-file", ReceiveFile::new);
     PACKETS_MAP.put("ping", Ping::new);

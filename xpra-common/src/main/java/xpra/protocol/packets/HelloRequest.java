@@ -80,7 +80,10 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 		caps.put("generic-rgb-encodings",true);
 		
 		caps.put("zlib", true);
-		caps.put("clipboard", false);
+		caps.put("clipboard", true);
+		caps.put("clipboard.want_targets", true);
+		caps.put("clipboard.greedy", true);
+		caps.put("clipboard.selections", new String[] {"CLIPBOARD", "PRIMARY"});
 		caps.put("notifications", true);
 		caps.put("cursors", true);
 		caps.put("named_cursors", true);
