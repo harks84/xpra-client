@@ -115,4 +115,12 @@ public class WindowMetadata extends WindowPacket {
 		}
 		return null;
 	}
+	
+	public boolean isNull(String key) {
+		Object value = meta.get(key);
+		if(value == null) {
+			return true;
+		}
+		return false;
+	}
 }

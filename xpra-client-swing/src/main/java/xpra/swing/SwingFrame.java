@@ -5,6 +5,10 @@ package xpra.swing;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.DisplayMode;
+import java.awt.Insets;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
 
 import javax.swing.JFrame;
 
@@ -19,6 +23,11 @@ import xpra.protocol.packets.WindowMetadata;
 public class SwingFrame extends SwingWindow<JFrame> {
 
 	private final XpraCanvas canvas;
+	
+	private Integer origX;
+	private Integer origY;
+	private Integer origWidth;
+	private Integer origHeight;
 
 	public SwingFrame(NewWindow wnd) {
 		super(wnd, new JFrame());
@@ -48,8 +57,40 @@ public class SwingFrame extends SwingWindow<JFrame> {
 	protected void onMetadataUpdate(WindowMetadata metadata) {
 		super.onMetadataUpdate(metadata);
 		final String title = metadata.getAsString("title");
+		
 		if(title != null) {
 			window.setTitle(title);
+		}
+		
+		if(!metadata.isNull("fullscreen")) {
+			final Boolean fullscreen = metadata.getAsBoolean("fullscreen");
+			if(fullscreen == true) {
+				// TODO probably a better way of doing this
+				// need dispose() for setUndecorated() and so loose window bounds
+				// and have to store for unmaximize
+				origX = window.getX();
+				origY = window.getY();
+				origWidth = window.getWidth();
+				origHeight = window.getHeight();
+				window.dispose();
+				window.setUndecorated(true);
+				window.setExtendedState(JFrame.MAXIMIZED_BOTH);
+				window.setVisible(true);
+
+			}else {
+				window.dispose();
+				window.setUndecorated(false);
+				if(origX !=null) {
+					window.setBounds(origX, origY, origWidth, origHeight);
+					origX = null;
+					origY = null;
+					origWidth = null;
+					origHeight = null;
+				}
+				window.setExtendedState(JFrame.NORMAL);
+				window.setVisible(true);
+			}
+			
 		}
 // TODO correct
 //		if(!metadata.getAsBoolean("decorations") && !window.isDisplayable()) {
