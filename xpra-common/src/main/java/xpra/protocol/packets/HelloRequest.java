@@ -44,12 +44,19 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 		
 		caps.put("version", ProtocolConstants.VERSION);
 		
+		caps.put("notify-startup-complete", true);
+		
+		caps.put("websocket.multi-packet", true);
 		// if (enc_pass != null) {
 		// caps.put("challenge_response", enc_pass);
 		// }
 		caps.put("metadata.supported", new String[] {"fullscreen", "maximized", "above", "below","group-leader",
 					"title", "size-hints", "class-instance", "transient-for", "window-type", "has-alpha",
 					"decorations", "override-redirect", "tray", "modal", "opacity", "desktop"});
+		
+		caps.put("server-window-resize", true);
+		caps.put("window.raise", true);
+		caps.put("window.initiate-moveresize", true);
 		
 		String[] digests = new String[] {"hmac", "hmac+md5", "hmac+sha256", "xor"};
 		caps.put("digest", digests);
