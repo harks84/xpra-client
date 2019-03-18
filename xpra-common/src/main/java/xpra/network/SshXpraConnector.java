@@ -53,15 +53,11 @@ public class SshXpraConnector extends XpraConnector implements Runnable {
 	private Thread thread;
 	private Session session;
 
-	public SshXpraConnector(XpraClient client, String host) {
-		this(client, host, null);
+	public SshXpraConnector(XpraClient client, String host, int port, String username) {
+		this(client, host, port, username, null);
 	}
 
-	public SshXpraConnector(XpraClient client, String host, String username) {
-		this(client, host, username, 22, null);
-	}
-
-	public SshXpraConnector(XpraClient client, String host, String username, int port, UserInfo userInfo) {
+	public SshXpraConnector(XpraClient client, String host, int port, String username, UserInfo userInfo) {
 		super(client);
 		this.host = host;
 		this.username = username;

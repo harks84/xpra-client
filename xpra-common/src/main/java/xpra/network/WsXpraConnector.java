@@ -28,16 +28,18 @@ public class WsXpraConnector extends XpraConnector implements Runnable {
 
 	private final String host;
 	private final int port;
+	private final boolean wss;
 
 	private Thread thread;
 
 	private WebSocketOutputStream outputStream;
 	private WebSocketInputStream inputStream;
 
-	public WsXpraConnector(XpraClient client, String hostname, int port) {
+	public WsXpraConnector(XpraClient client, String hostname, int port, boolean wss) {
 		super(client);
 		this.host = hostname;
 		this.port = port;
+		this.wss = wss;
 
 	}
 
@@ -75,7 +77,14 @@ public class WsXpraConnector extends XpraConnector implements Runnable {
 		WebSocket ws = null;
 		try {
 			WebSocketFactory wsf = new com.neovisionaries.ws.client.WebSocketFactory();
-			ws = wsf.createSocket("ws://" + host + ":" + port, 5000);
+			
+			String connString = "ws";
+			if(wss) {
+				connString = "wss";
+			}
+			connString += "://" + host + ":" + port;
+			
+			ws = wsf.createSocket(connString, 5000);
 			ws.addProtocol("binary");
 
 			ws.connect();
