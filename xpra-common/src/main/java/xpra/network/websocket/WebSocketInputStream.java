@@ -32,6 +32,7 @@ public class WebSocketInputStream extends PipedInputStream {
 			@Override
 			public void onBinaryMessage(WebSocket websocket, byte[] bytes) throws Exception {
 				outStream.write(bytes);
+				outStream.flush();
 			}
 			
 			@Override

@@ -72,10 +72,10 @@ public class WsXpraConnector extends XpraConnector implements Runnable {
 
 	@Override
 	public void run() {
-		Socket socket = null;
+		WebSocket ws = null;
 		try {
 			WebSocketFactory wsf = new com.neovisionaries.ws.client.WebSocketFactory();
-			WebSocket ws = wsf.createSocket("ws://" + host + ":" + port, 5000);
+			ws = wsf.createSocket("ws://" + host + ":" + port, 5000);
 			ws.addProtocol("binary");
 
 			ws.connect();
@@ -98,14 +98,7 @@ public class WsXpraConnector extends XpraConnector implements Runnable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
-			if (socket != null)
-				try {
-					socket.close();
-					if (client.getSender() != null) {
-						client.getSender().close();
-					}
-				} catch (Exception ignored) {
-				}
+			ws.disconnect();
 			client.onDisconnect();
 			fireOnDisconnectedEvent();
 		}
