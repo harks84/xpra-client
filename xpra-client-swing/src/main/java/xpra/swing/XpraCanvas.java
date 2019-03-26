@@ -61,7 +61,6 @@ public class XpraCanvas extends Canvas implements HierarchyListener, MouseListen
 		addMouseListener(this);
 		addMouseMotionListener(this);
 		addKeyListener(this);
-		setBackground(new Color(100, 100, 100, 0));
 	}
 
 	public void setCustomRoot(Window wnd) {
