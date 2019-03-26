@@ -1,6 +1,21 @@
-/**
- * 
+/*
+ * Copyright (C) 2019 Mark Harkin, 2017 Jakub Ksiezniak
+ *
+ *     This program is free software; you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation; either version 2 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public License along
+ *     with this program; if not, write to the Free Software Foundation, Inc.,
+ *     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+
 package xpra.swing;
 
 import java.awt.Color;
@@ -19,6 +34,7 @@ import java.awt.image.ComponentColorModel;
 import java.awt.image.DataBuffer;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
+import java.util.HashMap;
 
 import xpra.client.XpraClient;
 import xpra.client.XpraWindow;
@@ -27,15 +43,11 @@ import xpra.protocol.packets.CursorPacket;
 import xpra.protocol.packets.NewWindow;
 import xpra.swing.keyboard.SimpleXpraKeyboard;
 
-/**
- * @author Jakub Księżniak
- *
- */
 public class SwingXpraClient extends XpraClient {
-	
-	private final XpraTray tray;
 
-	private static final PictureEncoding[] PICTURE_ENCODINGS = { PictureEncoding.pngL,
+	private static XpraTray tray;
+
+	private static final PictureEncoding[] PICTURE_ENCODINGS = { PictureEncoding.rgb32, PictureEncoding.png,
 			PictureEncoding.pngP, PictureEncoding.pngL, PictureEncoding.jpeg };
 
 	private static int getDesktopWidth() {
@@ -59,7 +71,6 @@ public class SwingXpraClient extends XpraClient {
 //				.getDefaultScreenDevice()
 //				.isWindowTranslucencySupported(WindowTranslucency.PERPIXEL_TRANSPARENT));
 	}
-	
 
 	@Override
 	protected XpraWindow onCreateWindow(NewWindow wnd) {
@@ -130,14 +141,20 @@ public class SwingXpraClient extends XpraClient {
 		window.window.setCursor(c);
 
 	}
-	
-	public XpraTray getTray() {
+
+	public static XpraTray getTray() {
 		return tray;
 	}
 
 	@Override
 	public void notify(String title, String message) {
 		getTray().notify(title, message);
-		
+
+	}
+
+	@Override
+	public void setStartMenu(HashMap<String, Object> menu) {
+		getTray().setStartMenu(menu);
+
 	}
 }

@@ -1,14 +1,24 @@
-/**
- * 
+/*
+ * Copyright (C) 2019 Mark Harkin, 2017 Jakub Ksiezniak
+ *
+ *     This program is free software; you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation; either version 2 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public License along
+ *     with this program; if not, write to the Free Software Foundation, Inc.,
+ *     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+
 package xpra.swing;
 
-import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.DisplayMode;
-import java.awt.Insets;
-import java.awt.Rectangle;
-import java.awt.Toolkit;
 
 import javax.swing.JFrame;
 
@@ -23,7 +33,7 @@ import xpra.protocol.packets.WindowMetadata;
 public class SwingFrame extends SwingWindow<JFrame> {
 
 	private final XpraCanvas canvas;
-	
+
 	private Integer origX;
 	private Integer origY;
 	private Integer origWidth;
@@ -42,7 +52,7 @@ public class SwingFrame extends SwingWindow<JFrame> {
 		window.getContentPane().add(canvas);
 		window.pack();
 		window.setVisible(true);
-		
+
 		offsetX = window.getRootPane().getX();
 		offsetY = window.getRootPane().getY();
 	}
@@ -50,21 +60,21 @@ public class SwingFrame extends SwingWindow<JFrame> {
 	@Override
 	protected void onStop() {
 		window.setVisible(false);
-		window.dispose();		
+		window.dispose();
 	}
-	
+
 	@Override
 	protected void onMetadataUpdate(WindowMetadata metadata) {
 		super.onMetadataUpdate(metadata);
 		final String title = metadata.getAsString("title");
-		
-		if(title != null) {
+
+		if (title != null) {
 			window.setTitle(title);
 		}
-		
-		if(!metadata.isNull("fullscreen")) {
+
+		if (!metadata.isNull("fullscreen")) {
 			final Boolean fullscreen = metadata.getAsBoolean("fullscreen");
-			if(fullscreen == true) {
+			if (fullscreen == true) {
 				// TODO probably a better way of doing this
 				// need dispose() for setUndecorated() and so loose window bounds
 				// and have to store for unmaximize
@@ -77,10 +87,10 @@ public class SwingFrame extends SwingWindow<JFrame> {
 				window.setExtendedState(JFrame.MAXIMIZED_BOTH);
 				window.setVisible(true);
 
-			}else {
+			} else {
 				window.dispose();
 				window.setUndecorated(false);
-				if(origX !=null) {
+				if (origX != null) {
 					window.setBounds(origX, origY, origWidth, origHeight);
 					origX = null;
 					origY = null;
@@ -90,7 +100,7 @@ public class SwingFrame extends SwingWindow<JFrame> {
 				window.setExtendedState(JFrame.NORMAL);
 				window.setVisible(true);
 			}
-			
+
 		}
 // TODO correct
 //		if(!metadata.getAsBoolean("decorations") && !window.isDisplayable()) {

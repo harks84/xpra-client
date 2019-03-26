@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Mark Harkin, 2017 Jakub Ksiezniak
+ * Copyright (C) 2019 Mark Harkin
  *
  *     This program is free software; you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -16,10 +16,28 @@
  *     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-package xpra.protocol;
+package xpra.protocol.packets;
 
-public class ProtocolConstants {
+import java.util.Collection;
+import java.util.Iterator;
 
-	public static final String VERSION = "2.5";
-	public static final String MIN_VERSION = "2.5";
+public class OpenUrl extends xpra.protocol.IOPacket {
+
+	public String url;
+
+	public OpenUrl() {
+		super("open-url");
+	}
+
+	@Override
+	protected void serialize(Collection<Object> elems) {
+		elems.add(url);
+	}
+
+	@Override
+	protected void deserialize(Iterator<Object> iter) {
+		super.deserialize(iter);
+		url = asString(iter.next());
+	}
+
 }

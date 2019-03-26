@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Jakub Ksiezniak
+ * Copyright (C) 2019 Mark Harkin, 2017 Jakub Ksiezniak
  *
  *     This program is free software; you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -16,11 +16,10 @@
  *     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+
 package xpra.client;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.awt.Desktop;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
@@ -31,18 +30,23 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import xpra.network.XpraConnector;
+import xpra.protocol.PictureEncoding;
 import xpra.protocol.XpraReceiver;
 import xpra.protocol.XpraSender;
 import xpra.protocol.handlers.HelloHandler;
 import xpra.protocol.handlers.PacketHandler;
 import xpra.protocol.handlers.PingHandler;
-import xpra.protocol.PictureEncoding;
 import xpra.protocol.packets.ChallengePacket;
-import xpra.protocol.packets.ClipboardToken;
 import xpra.protocol.packets.ClipboardToken;
 import xpra.protocol.packets.ConfigureWindowOverrideRedirect;
 import xpra.protocol.packets.CursorPacket;
@@ -55,19 +59,19 @@ import xpra.protocol.packets.LostWindow;
 import xpra.protocol.packets.NewWindow;
 import xpra.protocol.packets.NewWindowOverrideRedirect;
 import xpra.protocol.packets.Notify;
+import xpra.protocol.packets.OpenUrl;
 import xpra.protocol.packets.Ping;
-import xpra.protocol.packets.PingEcho;
 import xpra.protocol.packets.RaiseWindow;
-import xpra.protocol.packets.ReceiveFile;
+import xpra.protocol.packets.SendFile;
 import xpra.protocol.packets.SetDeflate;
 import xpra.protocol.packets.StartupComplete;
 import xpra.protocol.packets.WindowIcon;
 import xpra.protocol.packets.WindowMetadata;
 import xpra.util.ChallengeUtil;
+import xpra.util.ConnectorUtil;
 
 public abstract class XpraClient {
-	public static final Logger LOGGER = LoggerFactory.getLogger(XpraClient.class);
-
+	private static final Logger LOGGER = LoggerFactory.getLogger(XpraClient.class);
 	private final Map<Integer, XpraWindow> windows = new HashMap<>();
 
 	private final PictureEncoding[] pictureEncodings;
@@ -75,7 +79,6 @@ public abstract class XpraClient {
 
 	private static XpraSender sender;
 	private static XpraReceiver receiver;
-	
 
 	/* Configuration options. */
 	private PictureEncoding encoding;
@@ -87,7 +90,7 @@ public abstract class XpraClient {
 
 	private String user;
 	private String password;
-	
+
 	Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 
 	/**
@@ -107,7 +110,7 @@ public abstract class XpraClient {
 		this.encoding = pictureEncodings[0];
 		this.keyboard = keyboard;
 		this.receiver = new XpraReceiver();
-		
+
 		clipboard.addFlavorListener(new FlavorListener() {
 			@Override
 			public void flavorsChanged(FlavorEvent e) {
@@ -122,7 +125,7 @@ public abstract class XpraClient {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-				
+
 			}
 		});
 
@@ -146,23 +149,25 @@ public abstract class XpraClient {
 				sender.send(hello);
 			}
 		});
-		
+
 		receiver.registerHandler(ClipboardToken.class, new PacketHandler<ClipboardToken>() {
 			@Override
 			public void process(ClipboardToken response) throws IOException {
 				LOGGER.info("Processing... " + response);
-				if(response.data != null) {
+				if (response.data != null) {
 					clipboard.setContents(new StringSelection(new String(response.data)), null);
 				}
-				
+
 			}
 		});
-		
+
 		receiver.registerHandler(Disconnect.class, new PacketHandler<Disconnect>() {
 			@Override
 			public void process(Disconnect response) throws IOException {
 				LOGGER.debug("Server disconnected with msg: " + response.reason);
 				disconnectedByServer = true;
+				// TODO for now exit
+				System.exit(0);
 			}
 		});
 		receiver.registerHandler(NewWindow.class, new PacketHandler<NewWindow>() {
@@ -187,35 +192,35 @@ public abstract class XpraClient {
 				onWindowStarted(window);
 			}
 		});
-		
+
 		receiver.registerHandler(Notify.class, new PacketHandler<Notify>() {
 			@Override
 			public void process(Notify response) throws IOException {
 				LOGGER.info("Processing... " + response);
 				XpraClient.this.notify(response.title, response.message);
-				
+
 			}
 
 		});
-		
-		receiver.registerHandler(ReceiveFile.class, new PacketHandler<ReceiveFile>() {
+
+		receiver.registerHandler(SendFile.class, new PacketHandler<SendFile>() {
 			@Override
-			public void process(ReceiveFile response) throws IOException {
+			public void process(SendFile response) throws IOException {
 				LOGGER.info("Processing... " + response);
-				//TODO cross-platform downloads folder
-				//TODO rename if file exists.
+				// TODO cross-platform downloads folder
+				// TODO rename if file exists.
 				String home = System.getProperty("user.home");
-				File file = new File(home + File.separator + "Downloads" + File.separator + response.name); 
+				File file = new File(home + File.separator + "Downloads" + File.separator + response.name);
 				try (FileOutputStream stream = new FileOutputStream(file)) {
-				    stream.write(response.data);
-				    stream.close();
-				    XpraClient.this.notify("Xpra File Download", "File saved to:\n" + file.getAbsolutePath());
+					stream.write(response.data);
+					stream.close();
+					XpraClient.this.notify("Xpra File Download", "File saved to:\n" + file.getAbsolutePath());
 				}
-				
+
 			}
 
 		});
-		
+
 		receiver.registerHandler(SetDeflate.class, new PacketHandler<SetDeflate>() {
 			@Override
 			public void process(SetDeflate response) throws IOException {
@@ -280,6 +285,21 @@ public abstract class XpraClient {
 			@Override
 			public void process(StartupComplete response) throws IOException {
 				LOGGER.info(response.toString());
+			}
+		});
+
+		receiver.registerHandler(OpenUrl.class, new PacketHandler<OpenUrl>() {
+			@Override
+			public void process(OpenUrl response) throws IOException {
+				LOGGER.info(response.toString());
+				if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+					try {
+						Desktop.getDesktop().browse(new URI(response.url));
+					} catch (URISyntaxException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 			}
 		});
 	}
@@ -369,7 +389,6 @@ public abstract class XpraClient {
 		receiver.onReceive(list);
 	}
 
-
 	public void setUser(String user) {
 		this.user = user;
 	}
@@ -377,8 +396,28 @@ public abstract class XpraClient {
 	public void setPassword(String password) {
 		this.password = password;
 	}
-	
+
 	public abstract void notify(String title, String message);
-	
+
+	public void connect(String connString) {
+		XpraConnector connector = ConnectorUtil.getConnector(this, connString);
+		connector.connect();
+
+		while (connector.isRunning()) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		;
+
+	}
+
+	public void setStartMenu(HashMap<String, Object> menu) {
+		// TODO Auto-generated method stub
+
+	}
 
 }

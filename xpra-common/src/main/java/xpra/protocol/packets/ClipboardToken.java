@@ -70,10 +70,9 @@ public class ClipboardToken extends xpra.protocol.IOPacket {
 		String a = asString(iter.next());
 		Object o = iter.next();
 		if(o instanceof ArrayList) {
-			System.out.println();
 			for(Object subO : (ArrayList)o) {
 				
-					System.out.println(asString(subO));
+					//System.out.println(asString(subO));
 				
 			}
 		}

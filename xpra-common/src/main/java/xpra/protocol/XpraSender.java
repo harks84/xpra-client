@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Jakub Ksiezniak
+ * Copyright (C) 2019 Mark Harkin, 2017 Jakub Ksiezniak
  *
  *     This program is free software; you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  *     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+
 package xpra.protocol;
 
 import java.io.ByteArrayOutputStream;
@@ -28,10 +29,9 @@ import org.ardverk.coding.BencodingOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import xpra.network.HeaderChunk;
-
 import com.github.jksiezni.rencode.RencodeOutputStream;
-import com.neovisionaries.ws.client.WebSocket;
+
+import xpra.network.HeaderChunk;
 
 public class XpraSender implements Closeable {
 	private static final Logger logger = LoggerFactory.getLogger(XpraSender.class);
@@ -42,8 +42,8 @@ public class XpraSender implements Closeable {
 	private final UnsafeByteArrayOutputStream byteStream = new UnsafeByteArrayOutputStream(4096);
 	private final BencodingOutputStream bencoder = new BencodingOutputStream(byteStream);
 	private final RencodeOutputStream rencoder = new RencodeOutputStream(byteStream);
-	
-	//private final Deflater deflater = new Deflater();
+
+	// private final Deflater deflater = new Deflater();
 
 	private boolean closed = false;
 	private boolean useRencode = false;
@@ -53,28 +53,27 @@ public class XpraSender implements Closeable {
 		this.outputStream = os;
 	}
 
-
 	public synchronized void send(IOPacket packet) {
-		if(closed) {
+		if (closed) {
 			logger.warn("Stream closed! Failed to send packet: " + packet.type);
 			return;
 		}
 		try {
 			final ArrayList<Object> list = new ArrayList<>();
-      list.add(packet.type);
+			list.add(packet.type);
 			packet.serialize(list);
 			if (useRencode) {
 				rencoder.writeCollection(list);
-        headerChunk.setFlags(HeaderChunk.FLAG_RENCODE);
+				headerChunk.setFlags(HeaderChunk.FLAG_RENCODE);
 			} else {
 				bencoder.writeCollection(list);
-        headerChunk.setFlags(0);
+				headerChunk.setFlags(0);
 			}
-			logger.info("send(" + list + ")");
+			logger.debug("send(" + list + ")");
 
 			final byte[] bytes = byteStream.getBytes();
 			final int packetSize = byteStream.size();
-			
+
 			// compress data when enabled
 			if (compressionLevel > 0) {
 				// currently we do not need to use a compressed data
@@ -84,7 +83,7 @@ public class XpraSender implements Closeable {
 //				deflater.deflate(b, off, len);
 //				deflater.reset();
 			}
-			
+
 			headerChunk.setPacketSize(packetSize);
 
 			logger.debug("send(): payload size is " + packetSize + " bytes");
@@ -92,11 +91,10 @@ public class XpraSender implements Closeable {
 			output.write(headerChunk.getHeader());
 			output.write(bytes, 0, packetSize);
 			byte[] out = output.toByteArray();
-			
-			
+
 			outputStream.write(out);
 			outputStream.flush();
-			
+
 			byteStream.reset();
 		} catch (IOException e) {
 			logger.error("Failed to send packet: " + packet.type, e);
@@ -110,9 +108,9 @@ public class XpraSender implements Closeable {
 	public void setCompressionLevel(int compressionLevel) {
 		this.compressionLevel = compressionLevel;
 	}
-	
-  @Override
-  public void close() throws IOException {
-    this.closed = true;
-  }
+
+	@Override
+	public void close() throws IOException {
+		this.closed = true;
+	}
 }

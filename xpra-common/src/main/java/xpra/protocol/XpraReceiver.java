@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Jakub Ksiezniak
+ * Copyright (C) 2019 Mark Harkin, 2017 Jakub Ksiezniak
  *
  *     This program is free software; you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -16,10 +16,8 @@
  *     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-package xpra.protocol;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package xpra.protocol;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -27,72 +25,93 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import xpra.protocol.handlers.PacketHandler;
-import xpra.protocol.packets.*;
+import xpra.protocol.packets.ChallengePacket;
+import xpra.protocol.packets.ClipboardToken;
+import xpra.protocol.packets.ConfigureWindowOverrideRedirect;
+import xpra.protocol.packets.CursorPacket;
+import xpra.protocol.packets.Disconnect;
+import xpra.protocol.packets.DrawPacket;
+import xpra.protocol.packets.HelloResponse;
+import xpra.protocol.packets.LostWindow;
+import xpra.protocol.packets.NewWindow;
+import xpra.protocol.packets.NewWindowOverrideRedirect;
+import xpra.protocol.packets.Notify;
+import xpra.protocol.packets.OpenUrl;
+import xpra.protocol.packets.Ping;
+import xpra.protocol.packets.RaiseWindow;
+import xpra.protocol.packets.SendFile;
+import xpra.protocol.packets.SetDeflate;
+import xpra.protocol.packets.StartupComplete;
+import xpra.protocol.packets.WindowIcon;
+import xpra.protocol.packets.WindowMetadata;
 
 /**
  *
  */
 
 public class XpraReceiver {
-  private static final Logger logger = LoggerFactory.getLogger(XpraReceiver.class);
-  private static final Map<String, Builder<Packet>> PACKETS_MAP = new HashMap<>();
+	private static final Logger logger = LoggerFactory.getLogger(XpraReceiver.class);
+	private static final Map<String, Builder<Packet>> PACKETS_MAP = new HashMap<>();
 
-  private final Map<Class<?>, PacketHandler<?>> handlers = new HashMap<>();
+	private final Map<Class<?>, PacketHandler<?>> handlers = new HashMap<>();
 
-  static {
-    PACKETS_MAP.put("hello", HelloResponse::new);
-    PACKETS_MAP.put("challenge", ChallengePacket::new);
-    PACKETS_MAP.put("clipboard-token", ClipboardToken::new);
-    PACKETS_MAP.put("cursor", CursorPacket::new);
-    PACKETS_MAP.put("send-file", ReceiveFile::new);
-    PACKETS_MAP.put("ping", Ping::new);
-    PACKETS_MAP.put("startup-complete", StartupComplete::new);
-    PACKETS_MAP.put("disconnect", Disconnect::new);
-    PACKETS_MAP.put("new-window", NewWindow::new);
-    PACKETS_MAP.put("new-override-redirect", NewWindowOverrideRedirect::new);
-    PACKETS_MAP.put("notify_show", Notify::new);
-    PACKETS_MAP.put("set_deflate", SetDeflate::new);
-    PACKETS_MAP.put("draw", DrawPacket::new);
-    PACKETS_MAP.put("window-metadata", WindowMetadata::new);
-    PACKETS_MAP.put("lost-window", LostWindow::new);
-    PACKETS_MAP.put("window-icon", WindowIcon::new);
-    PACKETS_MAP.put("configure-override-redirect", ConfigureWindowOverrideRedirect::new);
-    PACKETS_MAP.put("raise-window", RaiseWindow::new);
-  }
+	static {
+		PACKETS_MAP.put("hello", HelloResponse::new);
+		PACKETS_MAP.put("challenge", ChallengePacket::new);
+		PACKETS_MAP.put("clipboard-token", ClipboardToken::new);
+		PACKETS_MAP.put("cursor", CursorPacket::new);
+		PACKETS_MAP.put("send-file", SendFile::new);
+		PACKETS_MAP.put("open-url", OpenUrl::new);
+		PACKETS_MAP.put("ping", Ping::new);
+		PACKETS_MAP.put("startup-complete", StartupComplete::new);
+		PACKETS_MAP.put("disconnect", Disconnect::new);
+		PACKETS_MAP.put("new-window", NewWindow::new);
+		PACKETS_MAP.put("new-override-redirect", NewWindowOverrideRedirect::new);
+		PACKETS_MAP.put("notify_show", Notify::new);
+		PACKETS_MAP.put("set_deflate", SetDeflate::new);
+		PACKETS_MAP.put("draw", DrawPacket::new);
+		PACKETS_MAP.put("window-metadata", WindowMetadata::new);
+		PACKETS_MAP.put("lost-window", LostWindow::new);
+		PACKETS_MAP.put("window-icon", WindowIcon::new);
+		PACKETS_MAP.put("configure-override-redirect", ConfigureWindowOverrideRedirect::new);
+		PACKETS_MAP.put("raise-window", RaiseWindow::new);
+	}
 
-  public <T extends Packet> void registerHandler(Class<T> packetClass, PacketHandler<T> handler) {
-    handlers.put(packetClass, handler);
-  }
+	public <T extends Packet> void registerHandler(Class<T> packetClass, PacketHandler<T> handler) {
+		handlers.put(packetClass, handler);
+	}
 
-  public void onReceive(List<Object> dp) throws IOException {
-    if (dp.size() < 1) {
-      logger.error("onReceive(..) decoded data is too small: " + dp);
-      return;
-    }
+	public void onReceive(List<Object> dp) throws IOException {
+		if (dp.size() < 1) {
+			logger.error("onReceive(..) decoded data is too small: " + dp);
+			return;
+		}
 
-    Iterator<Object> it = dp.iterator();
-    String type = Packet.asString(it.next());
-    Builder<Packet> builder = PACKETS_MAP.get(type);
-    if (builder != null) {
-      Packet packet = builder.build();
-      packet.deserialize(it);
-  		process(packet);
-    } else {
-      logger.error("Not supported packet: " + type + ": " + dp);
-    }
-  }
+		Iterator<Object> it = dp.iterator();
+		String type = Packet.asString(it.next());
+		Builder<Packet> builder = PACKETS_MAP.get(type);
+		if (builder != null) {
+			Packet packet = builder.build();
+			packet.deserialize(it);
+			process(packet);
+		} else {
+			logger.error("Not supported packet: " + type + ": " + dp);
+		}
+	}
 
-  @SuppressWarnings("unchecked")
-  private void process(Packet packet) throws IOException {
-    PacketHandler handler = (PacketHandler) handlers.get(packet.getClass());
-    handler.process(packet);
-  }
+	@SuppressWarnings("unchecked")
+	private void process(Packet packet) throws IOException {
+		PacketHandler handler = handlers.get(packet.getClass());
+		handler.process(packet);
+	}
 
-  private interface Builder<T> {
+	private interface Builder<T> {
 
-    T build();
-  }
-
+		T build();
+	}
 
 }

@@ -1,22 +1,32 @@
+/*
+ * Copyright (C) 2019 Mark Harkin
+ *
+ *     This program is free software; you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation; either version 2 of the License, or
+ *     (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public License along
+ *     with this program; if not, write to the Free Software Foundation, Inc.,
+ *     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
 package xpra.network;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.neovisionaries.ws.client.WebSocket;
-import com.neovisionaries.ws.client.WebSocketAdapter;
 import com.neovisionaries.ws.client.WebSocketException;
 import com.neovisionaries.ws.client.WebSocketFactory;
-import com.neovisionaries.ws.client.WebSocketFrame;
 
 import xpra.client.XpraClient;
 import xpra.network.websocket.WebSocketInputStream;
@@ -77,13 +87,13 @@ public class WsXpraConnector extends XpraConnector implements Runnable {
 		WebSocket ws = null;
 		try {
 			WebSocketFactory wsf = new com.neovisionaries.ws.client.WebSocketFactory();
-			
+
 			String connString = "ws";
-			if(wss) {
+			if (wss) {
 				connString = "wss";
 			}
 			connString += "://" + host + ":" + port;
-			
+
 			ws = wsf.createSocket(connString, 5000);
 			ws.addProtocol("binary");
 
@@ -113,6 +123,7 @@ public class WsXpraConnector extends XpraConnector implements Runnable {
 		}
 	}
 
+	@Override
 	public boolean isRunning() {
 		return thread != null && thread.isAlive();
 	}

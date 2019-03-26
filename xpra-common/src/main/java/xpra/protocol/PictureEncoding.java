@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Jakub Ksiezniak
+ * Copyright (C) 2019 Mark Harkin, 2017 Jakub Ksiezniak
  *
  *     This program is free software; you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -19,33 +19,28 @@
 package xpra.protocol;
 
 public enum PictureEncoding {
-  rgb24,
-  premult_argb32,
-	jpeg,
-	png,
-	pngP("png/P"),
-	pngL("png/L");
+	rgb, rgb24, rgb32, png, pngP("png/P"), pngL("png/L"), jpeg;
 
 	private static final PictureEncoding[] values = values();
 	private final String code;
-	
+
 	PictureEncoding() {
 		code = name();
-		
+
 	}
-	
+
 	PictureEncoding(String code) {
 		this.code = code;
 	}
-	
+
 	@Override
 	public String toString() {
 		return code;
 	}
-	
+
 	public static PictureEncoding decode(String code) {
-		for(PictureEncoding encoding : values) {
-			if(encoding.code.equals(code)) {
+		for (PictureEncoding encoding : values) {
+			if (encoding.code.equals(code)) {
 				return encoding;
 			}
 		}
@@ -54,7 +49,7 @@ public enum PictureEncoding {
 
 	public static String[] toString(PictureEncoding[] encodings) {
 		final String[] array = new String[encodings.length];
-		for(int i = 0; i < encodings.length; ++i) {
+		for (int i = 0; i < encodings.length; ++i) {
 			array[i] = encodings[i].toString();
 		}
 		return array;

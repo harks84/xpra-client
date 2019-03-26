@@ -1,7 +1,7 @@
 apply plugin: 'java'
 apply plugin:'application'
 
-mainClassName = "xpra.swing.Launcher"
+mainClassName = "xpra.swing.SwingLauncher"
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -9,7 +9,7 @@ targetCompatibility = 1.8
 dependencies {
     compile project(':xpra-common')
 
-    compile 'org.slf4j:slf4j-simple:1.7.26'
+    compile 'ch.qos.logback:logback-classic:1.2.3'
 
     testCompile 'junit:junit:4.12'
 }

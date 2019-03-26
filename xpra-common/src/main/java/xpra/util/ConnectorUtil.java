@@ -1,6 +1,10 @@
-package xpra.network;
+package xpra.util;
 
 import xpra.client.XpraClient;
+import xpra.network.SshXpraConnector;
+import xpra.network.TcpXpraConnector;
+import xpra.network.WsXpraConnector;
+import xpra.network.XpraConnector;
 
 public class ConnectorUtil {
 	
