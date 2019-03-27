@@ -6,8 +6,11 @@ targetCompatibility = 1.8
 dependencies {
     compile 'com.github.jksiezni:bee-encode:0.3'
     compile 'com.github.jksiezni:rencode4j:1.2.0'
+    
+    compile 'org.lz4:lz4-java:1.5.1'
 
     compile 'org.slf4j:slf4j-api:1.7.26'
+    
     compile 'com.jcraft:jsch:0.1.52'
     
      compile 'com.neovisionaries:nv-websocket-client:2.6'
