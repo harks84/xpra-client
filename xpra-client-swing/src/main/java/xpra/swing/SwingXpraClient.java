@@ -169,12 +169,12 @@ public class SwingXpraClient extends XpraClient {
 	@Override
 	public String passwordPrompt() {
 		JPanel panel = new JPanel();
-		JLabel label = new JLabel("Enter a password:");
+		JLabel label = new JLabel("Password:");
 		JPasswordField pass = new JPasswordField(10);
 		panel.add(label);
 		panel.add(pass);
 		String[] options = new String[] { "OK", "Cancel" };
-		int option = JOptionPane.showOptionDialog(null, panel, "The title", JOptionPane.OK_OPTION,
+		int option = JOptionPane.showOptionDialog(null, panel, "Password", JOptionPane.OK_OPTION,
 				JOptionPane.PLAIN_MESSAGE, null, options, options[1]);
 		if (option == JOptionPane.OK_OPTION || option == JOptionPane.NO_OPTION) // pressing OK button
 		{

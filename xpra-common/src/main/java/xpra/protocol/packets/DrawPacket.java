@@ -37,6 +37,8 @@ public class DrawPacket extends WindowPacket {
 
 		if (options.containsKey("zlib")) {
 			data = CompressionUtil.decompressZlib(data);
+		} else if (options.containsKey("lz4")) {
+			data = CompressionUtil.decompressLZ4(data);
 		}
 
 	}

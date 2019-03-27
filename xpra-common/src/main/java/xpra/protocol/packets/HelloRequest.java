@@ -87,7 +87,7 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 		// caps.put("encoding.scrolling", true);
 		// caps.put("encoding.flush", true);
 		caps.put("generic-rgb-encodings", true);
-		caps.put("encoding.rgb_lz4", false);
+		caps.put("encoding.rgb_lz4", true);
 		caps.put("encoding.rgb_zlib", true);
 		caps.put("encoding.rgb24zlib", true);
 		caps.put("lz4", false);

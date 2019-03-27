@@ -17,9 +17,13 @@
 package xpra.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
+
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.lz4.LZ4FastDecompressor;
 
 public class CompressionUtil {
 
@@ -62,6 +66,26 @@ public class CompressionUtil {
 		inflater.end();
 
 		return returnValues;
+	}
+
+	public static byte[] decompressLZ4(byte[] bytesToDecompress) {
+		LZ4Factory lz4Factory = LZ4Factory.fastestInstance();
+		LZ4FastDecompressor decompressor = lz4Factory.fastDecompressor();
+
+		// java unsigned byte nastiness
+		int d0 = bytesToDecompress[0] & 0xFF;
+		int d1 = bytesToDecompress[1] & 0xFF;
+		int d2 = bytesToDecompress[2] & 0xFF;
+		int d3 = bytesToDecompress[3] & 0xFF;
+		int length = (d0 | (d1 << 8) | (d2 << 16) | (d3 << 24));
+
+		byte[] lz4Data = Arrays.copyOfRange(bytesToDecompress, 4, bytesToDecompress.length - 1);
+		if (length < 0) {
+			// TODO log error calculating length
+		}
+
+		return decompressor.decompress(lz4Data, length);
+
 	}
 
 }
