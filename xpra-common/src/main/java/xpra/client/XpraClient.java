@@ -88,7 +88,6 @@ public abstract class XpraClient {
 	private int ydpi;
 
 	private String user;
-	private String password;
 
 	Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 
@@ -143,6 +142,7 @@ public abstract class XpraClient {
 				String clientSalt = ChallengeUtil.getClientSalt(32);
 				String challengeSalt = ChallengeUtil.generateDigest(challenge.saltDigest, clientSalt,
 						challenge.serverSalt);
+				String password = passwordPrompt();
 				String challengeResponse = ChallengeUtil.generateDigest(challenge.digest, password, challengeSalt);
 				hello.setChallengeResponse(challengeResponse, clientSalt);
 				sender.send(hello);
@@ -396,14 +396,11 @@ public abstract class XpraClient {
 		this.user = user;
 	}
 
-	public void setPassword(String password) {
-		this.password = password;
-	}
-
 	public abstract void notify(String title, String message);
 
 	public void connect(String connString) {
 		XpraConnector connector = ConnectorUtil.getConnector(this, connString);
+		user = connector.getUser();
 		connector.connect();
 
 		while (connector.isRunning()) {
@@ -422,5 +419,7 @@ public abstract class XpraClient {
 		// TODO Auto-generated method stub
 
 	}
+
+	public abstract String passwordPrompt();
 
 }

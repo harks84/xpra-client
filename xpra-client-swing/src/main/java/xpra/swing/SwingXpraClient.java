@@ -36,6 +36,11 @@ import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.util.HashMap;
 
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+
 import xpra.client.XpraClient;
 import xpra.client.XpraWindow;
 import xpra.protocol.PictureEncoding;
@@ -159,5 +164,23 @@ public class SwingXpraClient extends XpraClient {
 	public void setStartMenu(HashMap<String, Object> menu) {
 		getTray().setStartMenu(menu);
 
+	}
+
+	@Override
+	public String passwordPrompt() {
+		JPanel panel = new JPanel();
+		JLabel label = new JLabel("Enter a password:");
+		JPasswordField pass = new JPasswordField(10);
+		panel.add(label);
+		panel.add(pass);
+		String[] options = new String[] { "OK", "Cancel" };
+		int option = JOptionPane.showOptionDialog(null, panel, "The title", JOptionPane.OK_OPTION,
+				JOptionPane.PLAIN_MESSAGE, null, options, options[1]);
+		if (option == JOptionPane.OK_OPTION || option == JOptionPane.NO_OPTION) // pressing OK button
+		{
+			char[] password = pass.getPassword();
+			return new String(password);
+		}
+		return null;
 	}
 }

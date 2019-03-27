@@ -32,33 +32,31 @@ import xpra.protocol.packets.Disconnect;
 
 public class TcpXpraConnector extends XpraConnector implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger(TcpXpraConnector.class);
-	
-	private final String host;
-	private final int port;
-	
+
 	private Thread thread;
-	
-	public TcpXpraConnector(XpraClient client, String hostname, int port) {
+
+	public TcpXpraConnector(XpraClient client, String user, String hostname, int port) {
 		super(client);
+		this.user = user;
 		this.host = hostname;
 		this.port = port;
 	}
 
 	@Override
 	public synchronized boolean connect() {
-		if(thread != null) {
+		if (thread != null) {
 			return false;
 		}
 		thread = new Thread(this);
 		thread.start();
 		return true;
 	}
-	
+
 	@Override
 	public synchronized void disconnect() {
-		if(thread != null) {
-			if(!disconnectCleanly()) {
-    		thread.interrupt();
+		if (thread != null) {
+			if (!disconnectCleanly()) {
+				thread.interrupt();
 			}
 			thread = null;
 		}
@@ -66,7 +64,7 @@ public class TcpXpraConnector extends XpraConnector implements Runnable {
 
 	private boolean disconnectCleanly() {
 		final xpra.protocol.XpraSender s = client.getSender();
-		if(s != null) {
+		if (s != null) {
 			s.send(new Disconnect());
 			return true;
 		}
@@ -83,32 +81,34 @@ public class TcpXpraConnector extends XpraConnector implements Runnable {
 			socket.setKeepAlive(true);
 			client.onConnect(new xpra.protocol.XpraSender(os));
 			fireOnConnectedEvent();
-			
+
 			PacketReader reader = new PacketReader(is);
 			logger.info("Start Xpra connection...");
-			while(!Thread.interrupted() && !client.isDisconnectedByServer()) {
-        List<Object> dp = reader.readList();
-        onPacketReceived(dp);
+			while (!Thread.interrupted() && !client.isDisconnectedByServer()) {
+				List<Object> dp = reader.readList();
+				onPacketReceived(dp);
 			}
 			logger.info("Finnished Xpra connection!");
 		} catch (IOException e) {
 			client.onConnectionError(e);
 			fireOnConnectionErrorEvent(e);
-		}
-		finally {
-			if(socket != null) try {
-				socket.close();
-        if(client.getSender() != null) {
-          client.getSender().close();
-        }
-      } catch (Exception ignored) {}
+		} finally {
+			if (socket != null)
+				try {
+					socket.close();
+					if (client.getSender() != null) {
+						client.getSender().close();
+					}
+				} catch (Exception ignored) {
+				}
 			client.onDisconnect();
 			fireOnDisconnectedEvent();
 		}
 	}
 
+	@Override
 	public boolean isRunning() {
 		return thread != null && thread.isAlive();
 	}
-	
+
 }

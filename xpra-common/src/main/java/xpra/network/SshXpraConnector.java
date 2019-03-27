@@ -25,15 +25,15 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import xpra.client.XpraClient;
-import xpra.protocol.packets.Disconnect;
-
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.UserInfo;
+
+import xpra.client.XpraClient;
+import xpra.protocol.packets.Disconnect;
 
 /**
  * An SSH connector to Xpra Server.
@@ -44,23 +44,20 @@ public class SshXpraConnector extends XpraConnector implements Runnable {
 	private final JSch jsch = new JSch();
 
 	private final UserInfo userInfo;
-	private final String username;
-	private final String host;
-	private final int port;
-	
+
 	private int display = 100;
 
 	private Thread thread;
 	private Session session;
 
-	public SshXpraConnector(XpraClient client, String host, int port, String username) {
-		this(client, host, port, username, null);
+	public SshXpraConnector(XpraClient client, String user, String host, int port) {
+		this(client, user, host, port, null);
 	}
 
-	public SshXpraConnector(XpraClient client, String host, int port, String username, UserInfo userInfo) {
+	public SshXpraConnector(XpraClient client, String user, String host, int port, UserInfo userInfo) {
 		super(client);
 		this.host = host;
-		this.username = username;
+		this.user = user;
 		this.port = port;
 		this.userInfo = userInfo;
 		JSch.setConfig("compression_level", "0");
@@ -72,10 +69,10 @@ public class SshXpraConnector extends XpraConnector implements Runnable {
 			return false;
 		}
 		try {
-			session = jsch.getSession(username, host, port);
+			session = jsch.getSession(user, host, port);
 			session.setUserInfo(userInfo);
-			//disableStrictHostKeyChecking();
-			
+			// disableStrictHostKeyChecking();
+
 			thread = new Thread(this);
 			thread.start();
 		} catch (JSchException e) {
@@ -86,8 +83,8 @@ public class SshXpraConnector extends XpraConnector implements Runnable {
 	}
 
 	/**
-	 * This setting will cause JSCH to automatically add all target servers'
-	 * entry to the known_hosts file
+	 * This setting will cause JSCH to automatically add all target servers' entry
+	 * to the known_hosts file
 	 */
 	void disableStrictHostKeyChecking() {
 		java.util.Properties config = new java.util.Properties();
@@ -97,9 +94,9 @@ public class SshXpraConnector extends XpraConnector implements Runnable {
 
 	@Override
 	public synchronized void disconnect() {
-		if(thread != null) {
-			if(!disconnectCleanly()) {
-    		thread.interrupt();
+		if (thread != null) {
+			if (!disconnectCleanly()) {
+				thread.interrupt();
 			}
 			thread = null;
 		}
@@ -107,7 +104,7 @@ public class SshXpraConnector extends XpraConnector implements Runnable {
 
 	private boolean disconnectCleanly() {
 		final xpra.protocol.XpraSender s = client.getSender();
-		if(s != null) {
+		if (s != null) {
 			s.send(new Disconnect());
 			return true;
 		}
@@ -124,7 +121,8 @@ public class SshXpraConnector extends XpraConnector implements Runnable {
 		try {
 			session.setServerAliveInterval(1000);
 			session.setServerAliveCountMax(15);
-			logger.debug("Keep-alive interval={}, maxAliveCount={}", session.getServerAliveInterval(), session.getServerAliveCountMax());
+			logger.debug("Keep-alive interval={}, maxAliveCount={}", session.getServerAliveInterval(),
+					session.getServerAliveCountMax());
 			session.connect();
 			final Channel channel = session.openChannel("exec");
 			((ChannelExec) channel).setCommand("~/.xpra/run-xpra _proxy :" + display);
@@ -136,8 +134,8 @@ public class SshXpraConnector extends XpraConnector implements Runnable {
 			PacketReader reader = new PacketReader(in);
 			logger.info("Start Xpra connection...");
 			while (!Thread.interrupted() && !client.isDisconnectedByServer()) {
-        List<Object> dp = reader.readList();
-        onPacketReceived(dp);
+				List<Object> dp = reader.readList();
+				onPacketReceived(dp);
 			}
 		} catch (JSchException e) {
 			client.onConnectionError(new IOException(e));
@@ -146,10 +144,12 @@ public class SshXpraConnector extends XpraConnector implements Runnable {
 			client.onConnectionError(e);
 			fireOnConnectionErrorEvent(e);
 		} finally {
-      logger.info("Finnished Xpra connection!");
-			if(client.getSender() != null) try {
-          client.getSender().close();
-      } catch (IOException ignore) {}
+			logger.info("Finnished Xpra connection!");
+			if (client.getSender() != null)
+				try {
+					client.getSender().close();
+				} catch (IOException ignore) {
+				}
 			if (session != null) {
 				session.disconnect();
 			}
@@ -161,7 +161,7 @@ public class SshXpraConnector extends XpraConnector implements Runnable {
 	public JSch getJsch() {
 		return jsch;
 	}
-	
+
 	public void setDisplay(int displayId) {
 		this.display = displayId;
 	}

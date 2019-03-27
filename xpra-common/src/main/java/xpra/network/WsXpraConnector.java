@@ -36,8 +36,6 @@ import xpra.protocol.packets.Disconnect;
 public class WsXpraConnector extends XpraConnector implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger(WsXpraConnector.class);
 
-	private final String host;
-	private final int port;
 	private final boolean wss;
 
 	private Thread thread;
@@ -45,8 +43,9 @@ public class WsXpraConnector extends XpraConnector implements Runnable {
 	private WebSocketOutputStream outputStream;
 	private WebSocketInputStream inputStream;
 
-	public WsXpraConnector(XpraClient client, String hostname, int port, boolean wss) {
+	public WsXpraConnector(XpraClient client, String user, String hostname, int port, boolean wss) {
 		super(client);
+		this.user = user;
 		this.host = hostname;
 		this.port = port;
 		this.wss = wss;
