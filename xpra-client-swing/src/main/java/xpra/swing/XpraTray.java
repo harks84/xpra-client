@@ -20,20 +20,32 @@ package xpra.swing;
 
 import java.awt.AWTException;
 import java.awt.Image;
-import java.awt.Menu;
-import java.awt.MenuItem;
-import java.awt.PopupMenu;
 import java.awt.SystemTray;
 import java.awt.Toolkit;
 import java.awt.TrayIcon;
 import java.awt.TrayIcon.MessageType;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JDialog;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+
 import xpra.protocol.packets.Disconnect;
 import xpra.protocol.packets.StartCommand;
+import xpra.util.ImageUtil;
 
 public class XpraTray {
 	private SwingXpraClient client;
@@ -41,7 +53,10 @@ public class XpraTray {
 	Image img = Toolkit.getDefaultToolkit().getImage(url);
 	final TrayIcon trayIcon = new TrayIcon(img);
 	final SystemTray tray = SystemTray.getSystemTray();
-	final PopupMenu mainMenu = new PopupMenu();
+	final JPopupMenu mainMenu = new JPopupMenu();
+
+	// https://stackoverflow.com/questions/19868209/cannot-hide-systemtray-jpopupmenu-when-it-loses-focus
+	final protected JDialog hiddenDialog = new JDialog();
 
 	public XpraTray(SwingXpraClient client) {
 		this.client = client;
@@ -49,8 +64,20 @@ public class XpraTray {
 			System.out.println("SystemTray is not supported");
 			return;
 		}
+		hiddenDialog.setSize(10, 10);
 
-		MenuItem disconnectItem = new MenuItem("Disconnect");
+		hiddenDialog.addWindowFocusListener(new WindowFocusListener() {
+			@Override
+			public void windowLostFocus(WindowEvent we) {
+				hiddenDialog.setVisible(false);
+			}
+
+			@Override
+			public void windowGainedFocus(WindowEvent we) {
+			}
+		});
+
+		JMenuItem disconnectItem = new JMenuItem("Disconnect");
 
 		disconnectItem.addActionListener(new ActionListener() {
 
@@ -78,7 +105,18 @@ public class XpraTray {
 
 		mainMenu.add(disconnectItem);
 
-		trayIcon.setPopupMenu(mainMenu);
+		trayIcon.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseReleased(MouseEvent e) {
+
+				hiddenDialog.setLocation(e.getX(), e.getY());
+				hiddenDialog.setVisible(true);
+				mainMenu.setLocation(e.getX(), e.getY());
+				mainMenu.setInvoker(hiddenDialog);
+				mainMenu.setVisible(true);
+
+			}
+		});
 
 		try {
 			tray.add(trayIcon);
@@ -94,23 +132,49 @@ public class XpraTray {
 
 	public void setStartMenu(HashMap<String, Object> menu) {
 		// TODO Auto-generated method stub
-		Menu startMenu = new Menu("Start");
+		JMenu startMenu = new JMenu("Start");
 
-		MenuItem commandItem = new MenuItem("Command");
+		// MenuItem commandItem = new MenuItem("Command");
+		for (String category : menu.keySet()) {
+			JMenu categoryMenu = new JMenu(category);
+			HashMap<String, Object> categoryMap = (HashMap<String, Object>) menu.get(category);
+			HashMap<String, Object> entryMap = (HashMap<String, Object>) categoryMap.get("Entries");
 
-		commandItem.addActionListener(new ActionListener() {
+			for (String entryName : entryMap.keySet()) {
+				HashMap<String, Object> entry = (HashMap<String, Object>) entryMap.get(entryName);
+				String name = new String((byte[]) entry.get("Name"));
+				String command = new String((byte[]) entry.get("command")).replaceAll("%[uUfF]", "");
 
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				// TODO Auto-generated method stub
-				StartCommand startCommand = new StartCommand("Firefox", "firefox", false);
+				JMenuItem commandItem = new JMenuItem(name);
+				try {
+					BufferedImage image = ImageIO.read(new ByteArrayInputStream((byte[]) entry.get("IconData")));
+					ImageIcon imageIcon = new ImageIcon(ImageUtil.resize(image, 16, 16));
 
-				client.getSender().send(startCommand);
+					commandItem.setIcon(imageIcon);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 
+				commandItem.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						// TODO Auto-generated method stub
+						StartCommand startCommand = new StartCommand(name, command, false);
+
+						client.getSender().send(startCommand);
+
+					}
+
+				});
+				categoryMenu.add(commandItem);
 			}
+			startMenu.add(categoryMenu);
 
-		});
-		startMenu.add(commandItem);
-		mainMenu.add(startMenu);
+		}
+
+		mainMenu.insert(startMenu, 0);
+
 	}
 }
