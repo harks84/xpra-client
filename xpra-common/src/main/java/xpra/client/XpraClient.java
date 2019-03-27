@@ -16,7 +16,6 @@
  *     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-
 package xpra.client;
 
 import java.awt.Desktop;
@@ -367,6 +366,10 @@ public abstract class XpraClient {
 
 	public XpraWindow getWindow(int windowId) {
 		return windows.get(windowId);
+	}
+
+	public Map<Integer, XpraWindow> getWindows() {
+		return windows;
 	}
 
 	public void setDesktopSize(int width, int height) {

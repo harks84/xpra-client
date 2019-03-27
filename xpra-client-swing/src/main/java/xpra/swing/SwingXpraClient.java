@@ -136,9 +136,12 @@ public class SwingXpraClient extends XpraClient {
 			hotspot.y -= 1;
 		}
 
-		Cursor c = toolkit.createCustomCursor(outputImg, hotspot, "test");
-		SwingFrame window = (SwingFrame) getWindow(1);
-		window.window.setCursor(c);
+		Cursor c = toolkit.createCustomCursor(outputImg, hotspot, "xpra-cursor");
+		for (XpraWindow window : getWindows().values()) {
+			if (window instanceof SwingFrame) {
+				((SwingFrame) window).window.setCursor(c);
+			}
+		}
 
 	}
 

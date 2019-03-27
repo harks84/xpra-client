@@ -71,13 +71,14 @@ public class HelloRequest extends xpra.protocol.IOPacket {
 		caps.put("client_type", "Java");
 		caps.put("screen_sizes", new int[][] { screenDims });
 		caps.put("encodings", PictureEncoding.toString(encodings));
+		caps.put("quality", 100);
 		caps.put("raw_window_icons", true);
 		caps.put("encodings.window-icon", new String[] { "png" });
 		// caps.put("encoding.generic", true);
 		// caps.put("encoding.core", PictureEncoding.toString(encodings));
 		// caps.put("encoding.eos", true);
 		caps.put("system_tray", true);
-		caps.put("encodings.rgb_formats", new String[] {"RGBA",  "RGBX" });
+		caps.put("encodings.rgb_formats", new String[] { "RGBA", "RGBX" });
 
 		// caps.put("encodings.cursor", new String[] { "png" });
 		caps.put("encoding.transparency", true);
